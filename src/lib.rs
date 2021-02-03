@@ -4,7 +4,7 @@
 //! ## Examples
 //!
 //! ```
-//! # #[runtime::main]
+//! # #[async_std::main]
 //! # async fn main() -> std::io::Result<()> {
 //! let mut db = memdb::Memdb::open().await?;
 //! db.set("beep", "boop").await?;
@@ -13,17 +13,15 @@
 //! # Ok(())
 //! # }
 //! ```
+use dashmap::DashMap;
 
-use parking_lot::RwLock;
-
-use std::collections::HashMap;
 use std::io;
 use std::sync::Arc;
 
 /// Key-value database.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Memdb {
-    hashmap: Arc<RwLock<HashMap<Vec<u8>, Vec<u8>>>>,
+    hashmap: Arc<DashMap<Vec<u8>, Vec<u8>>>,
 }
 
 impl Memdb {
@@ -31,7 +29,7 @@ impl Memdb {
     #[inline]
     pub async fn open() -> io::Result<Self> {
         Ok(Self {
-            hashmap: Arc::new(RwLock::new(HashMap::<Vec<u8>, Vec<u8>>::new())),
+            hashmap: Arc::new(DashMap::<Vec<u8>, Vec<u8>>::new()),
         })
     }
 
@@ -43,7 +41,6 @@ impl Memdb {
         value: impl AsRef<[u8]>,
     ) -> io::Result<Option<Vec<u8>>> {
         let hashmap = self.hashmap.clone();
-        let mut hashmap = hashmap.write();
         Ok(hashmap.insert(key.as_ref().to_owned(), value.as_ref().to_owned()))
     }
 
@@ -52,15 +49,21 @@ impl Memdb {
     #[inline]
     pub async fn get(&self, key: impl AsRef<[u8]>) -> io::Result<Option<Vec<u8>>> {
         let key = key.as_ref().to_owned();
-        let hashmap = &self.hashmap.read();
-        Ok(hashmap.get(&key).cloned())
+        let hashmap = &self.hashmap;
+        match hashmap.get(&key) {
+            Some(value) => {
+                let value = value.clone();
+                Ok(Some(value))
+            }
+            None => Ok(None),
+        }
     }
 
     /// Delete a value from the database.
     #[inline]
-    pub async fn del(&mut self, key: impl AsRef<[u8]>) -> io::Result<Option<Vec<u8>>> {
+    pub async fn del(&mut self, key: impl AsRef<[u8]>) -> io::Result<Option<(Vec<u8>, Vec<u8>)>> {
         let key = key.as_ref().to_owned();
-        let hashmap = &mut self.hashmap.write();
+        let hashmap = &mut self.hashmap;
         Ok(hashmap.remove(&key))
     }
 }

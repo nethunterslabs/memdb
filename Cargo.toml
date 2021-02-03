@@ -10,7 +10,7 @@ readme = "README.md"
 edition = "2018"
 
 [dependencies]
-parking_lot = "0.11.0"
+dashmap = "4.0.2"
 
 [dev-dependencies]
-runtime = "0.3.0-alpha.4"
+async-std = { version = "1.9.0", features = ["attributes"] }
