@@ -19,7 +19,7 @@ use std::io;
 use std::sync::Arc;
 
 /// Key-value database.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Memdb {
     hashmap: Arc<DashMap<Vec<u8>, Vec<u8>>>,
 }
