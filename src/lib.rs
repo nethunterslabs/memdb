@@ -50,20 +50,23 @@ impl Memdb {
     pub async fn get(&self, key: impl AsRef<[u8]>) -> io::Result<Option<Vec<u8>>> {
         let key = key.as_ref().to_owned();
         let hashmap = &self.hashmap;
-        match hashmap.get(&key) {
+        Ok(match hashmap.get(&key) {
             Some(value) => {
                 let value = value.clone();
-                Ok(Some(value))
+                Some(value)
             }
-            None => Ok(None),
-        }
+            None => None,
+        })
     }
 
     /// Delete a value from the database.
     #[inline]
-    pub async fn del(&mut self, key: impl AsRef<[u8]>) -> io::Result<Option<(Vec<u8>, Vec<u8>)>> {
+    pub async fn del(&mut self, key: impl AsRef<[u8]>) -> io::Result<Option<Vec<u8>>> {
         let key = key.as_ref().to_owned();
         let hashmap = &mut self.hashmap;
-        Ok(hashmap.remove(&key))
+        Ok(match hashmap.remove(&key) {
+            Some((_, value)) => Some(value),
+            None => None,
+        })
     }
 }
